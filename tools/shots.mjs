@@ -26,6 +26,8 @@ const VIEWS = [
   { map: 'foundry', mode: 'deathmatch', name: '17-weapon-havoc', from: [0, 1.75, 20], to: [0, 1.6, 8], weapon: 'havoc', showcase: true },
   { map: 'foundry', mode: 'deathmatch', name: '18-weapon-knife', from: [0, 1.75, 20], to: [0, 1.6, 8], weapon: 'knife', showcase: true },
   { map: 'foundry', mode: 'deathmatch', name: '19-weapon-ingame', from: [0, 1.75, 20], to: [0, 1.6, 8], weapon: 'warden' },
+  { map: 'foundry', mode: 'deathmatch', name: '20-characters', from: [0, 1.75, 24], to: [0, 1.55, 19], lineUp: true, showcase: true },
+  { map: 'dunes', mode: 'deathmatch', name: '21-characters-ingame', from: [0, 1.75, 20], to: [0, 1.5, 12], lineUp: true },
 ];
 
 /** Convert a from/to pair into the engine's yaw/pitch convention. */
@@ -92,6 +94,50 @@ for (const v of VIEWS) {
       g.player.setLoadout([v.weapon, 'sidewinder', 'knife']);
     }
     g.player.viewModel.setAds(!!v.ads);
+    if (v.lineUp) {
+      // Pose a few bots directly in front of the camera — idle, running,
+      // crouched, aiming and dead — so the rig can be judged in one frame.
+      const poses = [
+        { x: -3.0, back: 5.0, speed: 0, crouch: 0, aim: true, dead: false, yaw: 0.25 },
+        { x: -1.2, back: 4.2, speed: 6.0, crouch: 0, aim: false, dead: false, yaw: -0.5 },
+        { x: 0.8, back: 4.6, speed: 0, crouch: 1, aim: true, dead: false, yaw: 0.0 },
+        { x: 2.8, back: 5.4, speed: 3.0, crouch: 0, aim: true, dead: false, yaw: -0.2 },
+        { x: 4.6, back: 6.2, speed: 0, crouch: 0, aim: false, dead: true, yaw: 0.8 },
+      ];
+      const bots = g.agents.filter((a) => !a.isPlayer).slice(0, poses.length);
+      const fx = Math.sin(v.yaw), fz = Math.cos(v.yaw);
+      bots.forEach((b, i) => {
+        const P = poses[i];
+        b.alive = true;
+        b.character.revive();
+        b.character.root.visible = true;
+        // Place relative to the camera's facing direction.
+        b.pos.set(
+          v.from[0] - fx * P.back + fz * P.x,
+          v.from[1] - 1.75,
+          v.from[2] - fz * P.back - fx * P.x,
+        );
+        b.yaw = v.yaw + Math.PI + P.yaw;
+        b.aimYaw = b.yaw;
+        b.pitch = 0;
+        b.moveSpeed = P.speed;
+        b.character.setAiming(P.aim);
+        b.character.aimBlend = P.aim ? 1 : 0;
+        b.character.crouch = P.crouch;
+        for (let k = 0; k < 90; k++) {
+          b.character.update(1 / 60, { speed: P.speed, aimPitch: P.aim ? 0.05 : 0, crouch: P.crouch, grounded: true });
+        }
+        if (P.dead) {
+          b.character.die(0.5, 0.8);
+          for (let k = 0; k < 90; k++) b.character.update(1 / 60, {});
+        }
+        b.character.root.position.copy(b.pos);
+        b.character.root.rotation.y = b.yaw;
+      });
+      // The showcase hides bots by default; these are the subject.
+      if (v.showcase) for (const b of bots) b.character.root.visible = true;
+    }
+
     // Settle every spring so the pose is the resting one, not mid-transition.
     for (let i = 0; i < 240; i++) {
       g.player.viewModel.update(1 / 60, { speed: 0, grounded: true, crouching: false, lookDx: 0, lookDy: 0 });

@@ -231,9 +231,11 @@ export class Character {
     this.weapon = buildWeaponModel(def);
     mergeRigid(this.weapon.root);
     this.weapon.root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
-    // Seat the gun in the hand: grip at the palm, barrel pointing forward.
-    this.weapon.root.position.set(0.02, -0.3, -0.06);
-    this.weapon.root.rotation.set(-Math.PI / 2 + 0.1, 0, 0);
+    // Seat the gun in the hand: grip at the palm, barrel level and forward.
+    // These angles were solved against the shouldered arm pose — the mount
+    // inherits the forearm's twist, so they are not a simple axis flip.
+    this.weapon.root.position.set(-0.04, -0.02, -0.02);
+    this.weapon.root.rotation.set(-0.289, -0.547, 0.361);
     this.weaponMount.add(this.weapon.root);
     this.weaponDef = def;
   }
@@ -331,33 +333,36 @@ export class Character {
     this.head.rotation.x = dampAngle(this.head.rotation.x, -aimPitch * 0.25, 14, dt);
     this.head.rotation.y = dampAngle(this.head.rotation.y, clamp(this.lookYaw, -0.9, 0.9), 10, dt);
 
-    // --- arms: weapon-carry pose blended toward a proper shouldered aim ---
+    // --- arms: weapon-carry pose blended toward a shouldered aim ---
+    // The joint angles below were solved so the trigger hand lands on the grip
+    // and the support hand on the handguard; the limb pivots hang downward, so
+    // a POSITIVE x rotation swings the arm forward.
     const recoil = this.recoilSpring.value * 0.01;
-    const idleSwayL = -s * 0.28 * amp * (1 - aim * 0.7);
-    const idleSwayR = s * 0.28 * amp * (1 - aim * 0.7);
+    const swayL = -s * 0.30 * amp * (1 - aim * 0.75);
+    const swayR = s * 0.30 * amp * (1 - aim * 0.75);
 
     // Right arm holds the grip.
-    this.armR.upper.rotation.x = lerp(-0.55 + idleSwayR, -1.15 - aimPitch * 0.5, aim) + recoil;
-    this.armR.upper.rotation.z = lerp(0.22, 0.30, aim);
-    this.armR.upper.rotation.y = lerp(0.05, -0.12, aim);
-    this.armR.forearm.rotation.x = lerp(-0.75, -0.62, aim) - recoil * 1.4;
-    this.armR.forearm.rotation.y = lerp(0.1, 0.24, aim);
+    this.armR.upper.rotation.x = lerp(1.34 + swayR, 1.60 - aimPitch * 0.35, aim) - recoil;
+    this.armR.upper.rotation.y = lerp(-0.34, -0.50, aim);
+    this.armR.upper.rotation.z = lerp(0.14, -0.05, aim);
+    this.armR.forearm.rotation.x = lerp(-1.30, -1.35, aim) + recoil * 1.4;
+    this.armR.forearm.rotation.y = lerp(0.33, 0.50, aim);
 
-    // Left arm supports the handguard.
-    this.armL.upper.rotation.x = lerp(-0.7 + idleSwayL, -1.35 - aimPitch * 0.5, aim) + recoil * 0.6;
-    this.armL.upper.rotation.z = lerp(-0.3, -0.52, aim);
-    this.armL.upper.rotation.y = lerp(-0.05, 0.5, aim);
-    this.armL.forearm.rotation.x = lerp(-1.0, -1.15, aim) - recoil;
-    this.armL.forearm.rotation.y = lerp(-0.15, -0.45, aim);
+    // Left arm supports the handguard, reaching across the body.
+    this.armL.upper.rotation.x = lerp(1.21 + swayL, 1.55 - aimPitch * 0.35, aim) - recoil * 0.6;
+    this.armL.upper.rotation.y = lerp(0.90, 0.90, aim);
+    this.armL.upper.rotation.z = lerp(0.05, 0.05, aim);
+    this.armL.forearm.rotation.x = lerp(-0.83, -0.72, aim) + recoil;
+    this.armL.forearm.rotation.y = lerp(0.21, -0.22, aim);
 
     // --- reload: right hand dips to the mag well, weapon tilts ---
     if (this.reloadTime >= 0) {
       this.reloadTime += dt;
       const t = clamp01(this.reloadTime / this.reloadDuration);
       const k = Math.sin(t * Math.PI);
-      this.armL.upper.rotation.x += k * 0.75;
-      this.armL.upper.rotation.z += k * 0.35;
-      this.armL.forearm.rotation.x += k * 0.6;
+      this.armL.upper.rotation.x -= k * 0.55;
+      this.armL.upper.rotation.y -= k * 0.55;
+      this.armL.forearm.rotation.x -= k * 0.45;
       this.armR.upper.rotation.z += k * 0.12;
       if (this.weapon) this.weapon.root.rotation.z = k * 0.5;
       if (t >= 1) { this.reloadTime = -1; if (this.weapon) this.weapon.root.rotation.z = 0; }
@@ -380,9 +385,11 @@ export class Character {
     this.neck.rotation.x = lerp(this.neck.rotation.x, 0.5, dt * 5);
     // Limbs go slack.
     for (const arm of [this.armL, this.armR]) {
-      arm.upper.rotation.x = lerp(arm.upper.rotation.x, -0.1 + rand(-0.02, 0.02), dt * 4);
-      arm.upper.rotation.z = lerp(arm.upper.rotation.z, arm === this.armL ? -0.5 : 0.5, dt * 4);
-      arm.forearm.rotation.x = lerp(arm.forearm.rotation.x, -0.25, dt * 4);
+      arm.upper.rotation.x = lerp(arm.upper.rotation.x, 0.15 + rand(-0.05, 0.05), dt * 4);
+      arm.upper.rotation.y = lerp(arm.upper.rotation.y, 0, dt * 4);
+      arm.upper.rotation.z = lerp(arm.upper.rotation.z, arm === this.armL ? -0.55 : 0.55, dt * 4);
+      arm.forearm.rotation.x = lerp(arm.forearm.rotation.x, -0.3, dt * 4);
+      arm.forearm.rotation.y = lerp(arm.forearm.rotation.y, 0, dt * 4);
     }
     for (const leg of [this.legL, this.legR]) {
       leg.thigh.rotation.x = lerp(leg.thigh.rotation.x, 0.9, dt * 4);

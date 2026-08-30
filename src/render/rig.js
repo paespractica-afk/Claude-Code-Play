@@ -205,16 +205,17 @@ export function buildSkinned(root, partList) {
     if (parentBone) parentBone.add(bone);
     else root.add(bone);
   }
-  root.updateWorldMatrix(true, true);
+  root.updateMatrixWorld(true);
 
-  // 2. Bake every mesh into the space of its owning bone.
+  // 2. Bake every mesh into the ROOT's space, tagged with its owning bone.
+  //    The vertices must stay in bind-pose model space: the skinning shader
+  //    already multiplies by the bone's inverse bind matrix, so pre-applying it
+  //    here would transform the geometry twice.
+  const rootInverse = new THREE.Matrix4().copy(root.matrixWorld).invert();
   const geos = [];
   const meshes = [];
   for (let i = 0; i < partList.length; i++) {
     const { node } = partList[i];
-    const bone = boneByNode.get(node);
-    bone.updateWorldMatrix(true, false);
-    const inv = new THREE.Matrix4().copy(bone.matrixWorld).invert();
     node.traverse((o) => {
       if (!o.isMesh) return;
       // A part can itself be a mesh (a foot, say); otherwise only take meshes
@@ -226,7 +227,7 @@ export function buildSkinned(root, partList) {
           p = p.parent;
         }
       }
-      const m = new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld);
+      const m = new THREE.Matrix4().multiplyMatrices(rootInverse, o.matrixWorld);
       geos.push(bake(o, m, i));
       meshes.push(o);
     });
@@ -234,16 +235,18 @@ export function buildSkinned(root, partList) {
   for (const o of meshes) { o.parent?.remove(o); o.geometry.dispose(); }
 
   const merged = mergeAll(geos);
-  if (!merged) return { mesh: null, bones: boneByNode };
+  if (!merged) return { mesh: null, bones: boneByNode, boneList: bones };
 
+  // 3. Bind. The skeleton captures the bones' current (bind-pose) world
+  //    matrices, and the mesh's own world matrix is the bind matrix.
   const skeleton = new THREE.Skeleton(bones);
   const mesh = new THREE.SkinnedMesh(merged, createPartMaterial({ skinning: true }));
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.frustumCulled = false;
-  // Bones already sit under `root`, so bind with an identity matrix.
-  mesh.bind(skeleton, new THREE.Matrix4());
   root.add(mesh);
+  root.updateMatrixWorld(true);
+  mesh.bind(skeleton, mesh.matrixWorld);
 
   return { mesh, bones: boneByNode, boneList: bones };
 }

@@ -9,6 +9,7 @@
     "serve": "python3 -m http.server 8931",
     "check:maps": "node tools/checkmap.mjs foundry && node tools/checkmap.mjs dunes && node tools/checkmap.mjs vault",
     "test:smoke": "SMOKE_MODES=deathmatch,detonate,domination,gungame,firefight SMOKE_MAPS=foundry,dunes,vault node tools/smoke.mjs",
+    "test:rig": "node tools/rigtest.mjs",
     "test:functional": "node tools/functional.mjs",
     "shots": "node tools/shots.mjs && node tools/uishots.mjs"
   },

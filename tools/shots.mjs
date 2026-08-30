@@ -28,6 +28,7 @@ const VIEWS = [
   { map: 'foundry', mode: 'deathmatch', name: '19-weapon-ingame', from: [0, 1.75, 20], to: [0, 1.6, 8], weapon: 'warden' },
   { map: 'foundry', mode: 'deathmatch', name: '20-characters', from: [0, 1.75, 24], to: [0, 1.55, 19], lineUp: true, showcase: true },
   { map: 'dunes', mode: 'deathmatch', name: '21-characters-ingame', from: [0, 1.75, 20], to: [0, 1.5, 12], lineUp: true },
+  { map: 'dunes', mode: 'deathmatch', name: '22-combat', from: [0, 1.75, 20], to: [0, 1.62, 12], lineUp: true, combat: true },
 ];
 
 /** Convert a from/to pair into the engine's yaw/pitch convention. */
@@ -144,10 +145,54 @@ for (const v of VIEWS) {
     }
   }, { ...v, ...angles });
 
+  if (v.combat) {
+    // Freeze the loop, then fire a burst and render a single frame, so the
+    // muzzle flash, tracers, blood, shells and hit marker are all still alive
+    // in the captured image and the bots cannot shoot back in the meantime.
+    await page.evaluate(() => {
+      const g = window.__game;
+      const p = g.player;
+      g.loop.stop();
+      p.alive = true;
+      p.health = p.maxHealth;
+      p.takeDamage = () => false;
+      g.render.post.fx.damage = 0;
+      g.render.post.fx.hitFlash = 0;
+      g.render.post.fx.adrenaline = 0;
+
+      const target = g.agents.filter((a) => !a.isPlayer && a.alive)
+        .sort((a, b) => a.pos.distanceTo(p.pos) - b.pos.distanceTo(p.pos))[0];
+      if (target) {
+        target.health = 5000;
+        target.maxHealth = 5000;
+        const dx = target.pos.x - p.pos.x;
+        const dz = target.pos.z - p.pos.z;
+        const dy = (target.pos.y + 1.15) - (p.pos.y + p.eyeHeight);
+        p.yaw = Math.atan2(-dx, -dz);
+        p.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      }
+      for (let i = 0; i < 6; i++) {
+        p.fireTimer = 0;
+        p.firedThisPress = false;
+        p.ammo[p.def.id] = 30 - i;
+        p.tryFire(g.time);
+        const last = i === 5 ? 1 : 8;
+        for (let k = 0; k < last; k++) {
+          p.viewModel.update(1 / 240, { speed: 0, grounded: true, crouching: false, lookDx: 0, lookDy: 0 });
+          g.effects.update(1 / 240);
+        }
+      }
+      g.hud.hitmarker(true, false);
+      g.frame(1 / 60);
+    });
+  }
+
   // A few real frames so post-processing and particles are populated.
-  for (let i = 0; i < 6; i++) await page.waitForTimeout(180);
+  if (v.combat) await page.waitForTimeout(30);
+  else for (let i = 0; i < 6; i++) await page.waitForTimeout(180);
   await page.screenshot({ path: `${OUT}/${v.name}.png` });
   console.log(`✓ ${v.name}.png`);
+  if (v.combat) await page.evaluate(() => window.__game.loop.start());
 }
 
 await browser.close();

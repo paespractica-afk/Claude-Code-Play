@@ -28,15 +28,19 @@ void main() {
   vec2 local = position.xy * iSize;
 
   #ifdef STRETCHED
-    // Align the quad's local +X with the velocity direction in view space.
+    // Align the quad with the velocity direction in view space and trail it
+    // BEHIND the particle, so a tracer reads as a streak coming from the muzzle
+    // rather than a bar centred on the round.
     vec3 dirView = (modelViewMatrix * vec4(iStretch, 0.0)).xyz;
     float len = length(dirView.xy);
     vec2 axis = len > 0.0001 ? dirView.xy / len : vec2(1.0, 0.0);
     vec2 perp = vec2(-axis.y, axis.x);
     float stretchLen = length(iStretch);
-    vec2 offset = axis * (position.x * (iSize.x + stretchLen)) + perp * (position.y * iSize.y);
+    float along = position.x - 0.5;            // 0 at the head, -1 at the tail
+    vec2 offset = axis * (along * (iSize.x + stretchLen)) + perp * (position.y * iSize.y);
     viewCenter.xy += offset;
-  #else
+  #endif
+  #ifndef STRETCHED
     float s = sin(iRot), c = cos(iRot);
     vec2 rotated = vec2(local.x * c - local.y * s, local.x * s + local.y * c);
     viewCenter.xy += rotated;
@@ -643,8 +647,9 @@ export class EffectsManager {
   tracer(x, y, z, dx, dy, dz, speed = 240, life = 0.09, color = { r: 1, g: 0.82, b: 0.45 }) {
     this.tracers.spawn({
       x, y, z, vx: dx * speed, vy: dy * speed, vz: dz * speed,
-      life, size: 0.018, sizeEnd: 0.01, aspect: 1,
-      color, colorEnd: color, alpha: 0.9, alphaEnd: 0, stretch: 0.028,
+      life, size: 0.02, sizeEnd: 0.012, aspect: 1,
+      // Stretch is in seconds of travel: a short, fast streak, not a long bar.
+      color, colorEnd: color, alpha: 0.85, alphaEnd: 0, stretch: 0.006,
     });
   }
 

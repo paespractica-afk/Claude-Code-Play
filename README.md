@@ -1,18 +1,32 @@
 # BLACKSITE
 
 A first-person shooter that runs entirely in the browser. No build step, no
-asset downloads, no server: open `index.html` and play.
+asset downloads, no engine to install — serve the folder and play.
 
 Five modes, three maps, eight weapons, and an AI that uses cover, shares what it
 sees with its squad, and takes angles instead of running at you in a line.
 
-```
-python3 -m http.server 8931      # then open http://localhost:8931
-```
-
 It has to be served rather than opened from disk — browsers refuse to load
 JavaScript modules over `file://`. Any static server works, and the page says so
 if you try anyway.
+
+**Windows** — double-click `serve.bat`, or:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\serve.ps1
+```
+
+That is a self-contained static server built on the .NET sockets already in
+Windows: no Python, no Node, no administrator rights, and it binds to loopback
+only. Pass `-Port 8080` if 8931 is taken.
+
+**macOS / Linux** — anything static will do:
+
+```
+python3 -m http.server 8931
+```
+
+Then open **http://localhost:8931**.
 
 Requires a browser with WebGL 2 (any current Chrome, Edge, Firefox or Safari).
 
@@ -117,6 +131,7 @@ src/
   modes/              the five game modes
   ui/                 HUD and menus
 tools/                map validation, browser smoke tests, screenshot capture
+serve.ps1 serve.bat   dependency-free static server for Windows
 vendor/three/         pinned three.js r169
 ```
 

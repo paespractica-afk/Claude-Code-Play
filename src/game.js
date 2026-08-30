@@ -20,7 +20,7 @@ import { HUD } from './ui/hud.js';
 import { Menu } from './ui/menu.js';
 import { createMode, MODES } from './modes/modes.js';
 import { WEAPONS, GRENADES, PRIMARIES, SECONDARIES } from './weapons/defs.js';
-import { explosionDamage, flashIntensity } from './weapons/combat.js';
+import { explosionDamage, flashIntensity, patternAt } from './weapons/combat.js';
 
 import { foundry } from './world/maps/foundry.js';
 import { dunes } from './world/maps/dunes.js';
@@ -137,9 +137,9 @@ export class Game {
     this.effects = new EffectsManager(this.render.scene, this.render.viewScene, this.collision, this.render.quality);
     this.menu.setLoading(1, 'READY');
     await new Promise((r) => setTimeout(r, 200));
+    // Load a map so the menu has a live world orbiting behind it.
+    await this.loadMap('foundry');
     this.menu.show('main');
-    // Idle backdrop: keep rendering the (empty) scene behind the menu.
-    this.render.applyEnvironment(foundry.env);
     this.loop.start();
   }
 
@@ -290,6 +290,9 @@ export class Game {
     audio.setReverb(this.mapDef.id === 'vault' ? 0.42 : 0.24, this.mapDef.id === 'dunes' ? 1.2 : 2.2);
     this.resume();
   }
+
+  /** Exposed for the functional tests, which assert spray patterns are stable. */
+  patternAt(def, index) { return patternAt(def, index); }
 
   /** Squad memory for a team, created on demand so free-for-all works too. */
   blackboardFor(team) {
@@ -768,13 +771,19 @@ export class Game {
     r.updateDynamicRes(this.loop.fps, dt);
 
     if (!this.running) {
-      // Menu backdrop: a slow orbit so the front end isn't a static image.
-      const t = performance.now() * 0.00006;
-      r.camera.position.set(Math.cos(t) * 26, 9 + Math.sin(t * 1.7) * 2, Math.sin(t) * 26);
-      r.camera.lookAt(0, 3, 0);
-      r.camera.fov = 60;
+      // Menu backdrop: a slow orbit around the map's centre of interest.
+      const focus = this.mapBuilder?.markers?.mid || this.mapBuilder?.markers?.hq
+        || this.mapBuilder?.markers?.atrium || { x: 0, y: 0, z: 0 };
+      const t = performance.now() * 0.00005;
+      r.camera.position.set(
+        focus.x + Math.cos(t) * 9,
+        focus.y + 3.4 + Math.sin(t * 1.7) * 0.6,
+        focus.z + Math.sin(t) * 9,
+      );
+      r.camera.lookAt(focus.x, focus.y + 1.6, focus.z);
+      r.camera.fov = 58;
       r.camera.updateProjectionMatrix();
-      r.updateShadowFocus(0, 0, 0);
+      r.updateShadowFocus(focus.x, focus.y, focus.z);
       r.render(performance.now() * 0.001);
       this.input.endFrame();
       return;

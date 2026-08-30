@@ -127,6 +127,9 @@ export class Agent {
 
     // Perception + memory
     this.perception = new Perception(this);
+    this.perceptionInterval = 1 / 30;
+    this._perceptionAccum = rand(0, this.perceptionInterval);
+    this._ctxCache = null;
     this.target = null;
     this.targetTrackTime = 0;
     this.lastTargetSeen = -99;
@@ -932,7 +935,9 @@ export class Agent {
   /** Keep out of squadmates' personal space so a squad doesn't merge into one blob. */
   _separation(out) {
     let sx = 0, sz = 0, n = 0;
-    for (const a of this.game.agents) {
+    const agents = this.game.agents;
+    for (let i = 0; i < agents.length; i++) {
+      const a = agents[i];
       if (a === this || !a.alive || a.team !== this.team) continue;
       const dx = this.pos.x - a.pos.x, dz = this.pos.z - a.pos.z;
       const d2 = dx * dx + dz * dz;
@@ -1084,13 +1089,18 @@ export class Agent {
     const time = this.game.time;
     this.forward.set(-Math.sin(this.aimYaw), 0, -Math.cos(this.aimYaw)).normalize();
 
-    // ---- perception ----
-    this.perception.update(dt, this.game.enemiesOf(this.team, this, this._enemyList), this.world, time, this._senseConfig());
+    // ---- perception (throttled; rays are the expensive part of a tick) ----
+    this._perceptionAccum += dt;
+    if (this._perceptionAccum >= this.perceptionInterval) {
+      const pdt = this._perceptionAccum;
+      this._perceptionAccum = 0;
+      this.perception.update(pdt, this.game.enemiesOf(this.team, this, this._enemyList), this.world, time, this._senseConfig());
 
-    // Publish everything we can see.
-    for (const [id, v] of this.perception.visible) {
-      const aw = this.perception.awareness.get(id) ?? 0;
-      if (aw > 0.25) this.blackboard?.report(v.entity, v.entity.pos, time, aw, this.id, v.entity.vel);
+      // Publish everything we can see.
+      for (const [id, v] of this.perception.visible) {
+        const aw = this.perception.awareness.get(id) ?? 0;
+        if (aw > 0.25) this.blackboard?.report(v.entity, v.entity.pos, time, aw, this.id, v.entity.vel);
+      }
     }
 
     // ---- build decision context ----
@@ -1104,20 +1114,32 @@ export class Agent {
     if (target) threats.push({ x: target.entity.pos.x, y: target.entity.pos.y + 1.6, z: target.entity.pos.z });
     else if (contact) threats.push({ x: contact.x, y: contact.y + 1.6, z: contact.z });
 
-    let inCover = false;
-    if (threats.length) {
-      const t = threats[0];
-      inCover = !this.world.lineOfSight(this.pos.x, this.pos.y + this.eyeHeight, this.pos.z, t.x, t.y, t.z);
+    this._coverTimer = (this._coverTimer ?? 0) - dt;
+    if (this._coverTimer <= 0) {
+      this._coverTimer = 0.12;
+      this._inCover = false;
+      if (threats.length) {
+        const t = threats[0];
+        this._inCover = !this.world.lineOfSight(this.pos.x, this.pos.y + this.eyeHeight, this.pos.z, t.x, t.y, t.z);
+      }
     }
+    const inCover = this._inCover ?? false;
 
-    let nearestAlly = null, nearestAllyDist = Infinity, aliveAllies = 0;
-    for (const a of this.game.agents) {
-      if (a === this || a.team !== this.team) continue;
-      if (!a.alive) continue;
-      aliveAllies++;
-      const d = Math.hypot(a.pos.x - this.pos.x, a.pos.z - this.pos.z);
-      if (d < nearestAllyDist) { nearestAllyDist = d; nearestAlly = a; }
+    this._allyTimer = (this._allyTimer ?? 0) - dt;
+    if (this._allyTimer <= 0) {
+      this._allyTimer = 0.25;
+      let na = null, nad = Infinity, alive = 0;
+      for (const a of this.game.agents) {
+        if (a === this || a.team !== this.team || !a.alive) continue;
+        alive++;
+        const d = Math.hypot(a.pos.x - this.pos.x, a.pos.z - this.pos.z);
+        if (d < nad) { nad = d; na = a; }
+      }
+      this._nearestAlly = na; this._nearestAllyDist = nad; this._aliveAllies = alive;
     }
+    const nearestAlly = this._nearestAlly ?? null;
+    const nearestAllyDist = this._nearestAllyDist ?? Infinity;
+    const aliveAllies = this._aliveAllies ?? 0;
 
     const ctx = {
       target,

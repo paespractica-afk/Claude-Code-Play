@@ -349,7 +349,7 @@ const RECIPES = {
     const wear = fbm(u * 5, v * 5, 4, 5, 23);
     const scuff = Math.max(0, wear - 0.58) * 1.5;
     const grain = (fbm(u * 32, v * 32, 3, 32, 9) - 0.5) * 0.035;
-    const paintR = stripe ? 0.60 : 0.10, paintG = stripe ? 0.46 : 0.10, paintB = stripe ? 0.08 : 0.11;
+    const paintR = stripe ? 0.58 : 0.20, paintG = stripe ? 0.45 : 0.20, paintB = stripe ? 0.10 : 0.21;
     const k = 1 - scuff;
     return {
       r: paintR * k + 0.22 * scuff + grain,

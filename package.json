@@ -1,0 +1,18 @@
+{
+  "name": "blacksite",
+  "version": "1.0.0",
+  "description": "A browser first-person shooter with five modes, three maps and squad-coordinated AI.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8931",
+    "serve": "python3 -m http.server 8931",
+    "check:maps": "node tools/checkmap.mjs foundry && node tools/checkmap.mjs dunes && node tools/checkmap.mjs vault",
+    "test:smoke": "SMOKE_MODES=deathmatch,detonate,domination,gungame,firefight SMOKE_MAPS=foundry,dunes,vault node tools/smoke.mjs",
+    "test:functional": "node tools/functional.mjs",
+    "shots": "node tools/shots.mjs && node tools/uishots.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  }
+}

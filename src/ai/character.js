@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { clamp, clamp01, lerp, damp, dampAngle, shortAngle, rand, TAU, Spring } from '../core/math.js';
 import { buildWeaponModel } from '../weapons/model.js';
+import { buildSkinned, mergeRigid, createPartMaterial } from '../render/rig.js';
 
 const TEAM_COLORS = [
   { primary: 0x2c3e5c, secondary: 0x1a2436, accent: 0x4fc3f7, light: 0x4fc3f7 },
@@ -90,9 +91,7 @@ export class Character {
     this.head.add(this._mesh(new THREE.BoxGeometry(0.22, 0.14, 0.24), mArmor, 0, 0.16, -0.005));
     this.head.add(this._mesh(new THREE.BoxGeometry(0.225, 0.04, 0.05), mArmor, 0, 0.1, -0.10));
     // Visor / goggles with a team-coloured glow so targets read at distance.
-    const visor = this._mesh(new THREE.BoxGeometry(0.2, 0.055, 0.03), mVisor, 0, 0.115, 0.105);
-    this.head.add(visor);
-    this.visor = visor;
+    this.head.add(this._mesh(new THREE.BoxGeometry(0.2, 0.055, 0.03), mVisor, 0, 0.115, 0.105));
     this.head.add(this._mesh(new THREE.BoxGeometry(0.02, 0.035, 0.03), mAccent, 0.085, 0.175, 0.09));
 
     // --- arms ---
@@ -114,8 +113,39 @@ export class Character {
     // --- weapon mount on the right hand ---
     this.weaponMount = new THREE.Group();
     this.weaponMount.position.set(0, -0.26, 0);
-    this.armR.forearm.add(this.weaponMount);
     this.weapon = null;
+
+    // --- collapse the rig into a single skinned mesh ---
+    // Forty-odd little boxes would be forty-odd draw calls per character; baked
+    // into one skinned geometry it is one, with PBR values carried per vertex.
+    const parts = [
+      { node: this.hips }, { node: this.spine }, { node: this.chest },
+      { node: this.neck }, { node: this.head },
+      { node: this.armL.group }, { node: this.armL.upper }, { node: this.armL.forearm },
+      { node: this.armR.group }, { node: this.armR.upper }, { node: this.armR.forearm },
+      { node: this.legL.group }, { node: this.legL.thigh }, { node: this.legL.shin }, { node: this.legL.foot },
+      { node: this.legR.group }, { node: this.legR.thigh }, { node: this.legR.shin }, { node: this.legR.foot },
+    ];
+    const skinned = buildSkinned(this.root, parts);
+    this.skinnedMesh = skinned.mesh;
+    this.boneList = skinned.boneList;
+    // Re-point every animated reference at its bone; the original groups are
+    // now empty and detached.
+    const B = (n) => skinned.bones.get(n) || n;
+    this.root.remove(this.hips);
+    this.hips = B(this.hips);
+    this.spine = B(this.spine);
+    this.chest = B(this.chest);
+    this.neck = B(this.neck);
+    this.head = B(this.head);
+    for (const arm of [this.armL, this.armR]) {
+      arm.group = B(arm.group); arm.upper = B(arm.upper); arm.forearm = B(arm.forearm);
+    }
+    for (const leg of [this.legL, this.legR]) {
+      leg.group = B(leg.group); leg.thigh = B(leg.thigh); leg.shin = B(leg.shin); leg.foot = B(leg.foot);
+    }
+    this.hipsRest = this.hips.position.y;
+    this.armR.forearm.add(this.weaponMount);
 
     // --- animation state ---
     this.phase = rand(0, TAU);
@@ -182,9 +212,12 @@ export class Character {
     const knee = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.09, 0.14), mArmor);
     knee.position.y = -0.02;
     shin.add(knee);
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.09, 0.25), mDark);
-    foot.position.set(0, -0.43, 0.04);
-    foot.castShadow = true;
+    const foot = new THREE.Group();
+    foot.position.set(0, -0.4, 0);
+    const footMesh = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.09, 0.25), mDark);
+    footMesh.position.set(0, -0.03, 0.04);
+    footMesh.castShadow = true;
+    foot.add(footMesh);
     shin.add(foot);
     return { group, thigh, shin, foot };
   }
@@ -196,7 +229,8 @@ export class Character {
     }
     if (!def) { this.weapon = null; return; }
     this.weapon = buildWeaponModel(def);
-    this.weapon.root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = true; } });
+    mergeRigid(this.weapon.root);
+    this.weapon.root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
     // Seat the gun in the hand: grip at the palm, barrel pointing forward.
     this.weapon.root.position.set(0.02, -0.3, -0.06);
     this.weapon.root.rotation.set(-Math.PI / 2 + 0.1, 0, 0);
@@ -227,7 +261,7 @@ export class Character {
     this.dead = false;
     this.deathTime = 0;
     this.root.rotation.set(0, this.root.rotation.y, 0);
-    this.hips.position.y = 0.94;
+    this.hips.position.y = this.hipsRest;
     this.hips.rotation.set(0, 0, 0);
   }
 
@@ -280,7 +314,7 @@ export class Character {
 
     // --- hips: bob, sway and crouch drop ---
     const bob = -Math.abs(c) * 0.045 * amp;
-    this.hips.position.y = 0.94 - this.crouch * 0.42 + bob + Math.sin(this.breath) * 0.006 * (1 - amp);
+    this.hips.position.y = this.hipsRest - this.crouch * 0.42 + bob + Math.sin(this.breath) * 0.006 * (1 - amp);
     this.hips.rotation.z = s * 0.05 * amp;
     this.hips.rotation.y = -s * 0.16 * amp;
     this.hips.rotation.x = this.crouch * 0.22 + run * 0.12;
@@ -338,7 +372,7 @@ export class Character {
     const t = clamp01(this.deathTime / 1.1);
     const e = 1 - Math.pow(1 - t, 3);
     // Collapse: hips drop, body rotates onto its back/side.
-    this.hips.position.y = lerp(0.94, 0.22, e);
+    this.hips.position.y = lerp(this.hipsRest, 0.22, e);
     this.hips.rotation.x = lerp(0, this.deathFall * 1.6, e);
     this.hips.rotation.z = lerp(0, this.deathSpin, e);
     this.spine.rotation.x = lerp(this.spine.rotation.x, 0.4, dt * 4);
@@ -354,18 +388,19 @@ export class Character {
       leg.thigh.rotation.x = lerp(leg.thigh.rotation.x, 0.9, dt * 4);
       leg.shin.rotation.x = lerp(leg.shin.rotation.x, 0.4, dt * 4);
     }
-    if (this.visor) this.visor.material.emissiveIntensity = lerp(0.35, 0, e);
+
   }
 
   setDim(amount) {
-    for (const mat of this.materials) {
-      if (!mat.userData.baseColor) mat.userData.baseColor = mat.color.clone();
-      mat.color.copy(mat.userData.baseColor).multiplyScalar(amount);
-    }
+    // Vertex colours are multiplied by the material colour, so one value dims
+    // the whole character.
+    if (this.skinnedMesh) this.skinnedMesh.material.color.setScalar(amount);
   }
 
   dispose() {
-    this.root.traverse((o) => { if (o.isMesh) o.geometry?.dispose(); });
+    this.root.traverse((o) => {
+      if (o.isMesh) { o.geometry?.dispose(); o.material?.dispose?.(); }
+    });
     for (const mat of this.materials) mat.dispose();
     if (this.weapon) this.weapon.root.traverse((o) => { if (o.isMesh) o.geometry?.dispose(); });
   }

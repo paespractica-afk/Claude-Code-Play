@@ -311,7 +311,9 @@ void main() {
   // --- Film grain (animated, luminance-weighted so shadows stay clean) ---
   if (uGrain > 0.0001) {
     float n = hash13(vec3(gl_FragCoord.xy, fract(uTime) * 91.7)) - 0.5;
-    col += n * uGrain * (0.35 + (1.0 - luma(col)) * 0.65);
+    // Weight grain toward the midtones; shadows stay clean, highlights stay crisp.
+    float lg = luma(col);
+    col += n * uGrain * (0.25 + 4.0 * lg * (1.0 - lg));
   }
 
   gl_FragColor = vec4(toSRGB(clamp(col, 0.0, 1.0)), 1.0);
@@ -383,12 +385,12 @@ export class PostPipeline {
       bloom: true,
       ssao: true,
       fxaa: true,
-      bloomStrength: 0.55,
-      bloomThreshold: 1.05,
-      bloomKnee: 0.6,
-      bloomRadius: 1.1,
-      aoStrength: 0.7,
-      aoRadius: 0.9,
+      bloomStrength: 0.42,
+      bloomThreshold: 1.35,
+      bloomKnee: 0.55,
+      bloomRadius: 1.0,
+      aoStrength: 0.85,
+      aoRadius: 1.1,
       exposure: 1.0,
       ...options,
     };
@@ -411,7 +413,7 @@ export class PostPipeline {
       exposure: 1.0, contrast: 1.04, saturation: 1.06,
       lift: new THREE.Vector3(0, 0, 0),
       gain: new THREE.Vector3(1, 1, 1),
-      vignette: 0.42, chroma: 1.0, grain: 0.035, sharpen: 0.25,
+      vignette: 0.42, chroma: 1.0, grain: 0.022, sharpen: 0.25,
     };
     this.fx = { damage: 0, flash: 0, hitFlash: 0, adrenaline: 0, scopeDark: 0, aberrationBoost: 0 };
   }

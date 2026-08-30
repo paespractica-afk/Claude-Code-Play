@@ -17,11 +17,12 @@ export const vault = {
     turbidity: 12, rayleigh: 0.4, mieCoefficient: 0.02, mieDirectionalG: 0.7,
     elevation: 3, azimuth: 20,
     sunColor: 0x2a3550, sunIntensity: 0.3,
-    hemiSky: 0x3d5170, hemiGround: 0x14100c, hemiIntensity: 0.4,
+    hemiSky: 0x35486a, hemiGround: 0x14100c, hemiIntensity: 0.22,
     fogColor: 0x0d1118, fogDensity: 0.018,
-    exposure: 1.3, envIntensity: 0.35,
+    exposure: 0.95, envIntensity: 1.15,
+    probe: { top: 0x46586f, horizon: 0x4b453d, bottom: 0x1c1917, boost: 0.95 },
     showSky: false, backgroundColor: 0x05070b,
-    grade: { contrast: 1.12, saturation: 0.95, vignette: 0.55 },
+    grade: { contrast: 1.14, saturation: 1.0, vignette: 0.55 },
   },
   probes: [
     { name: 'mezzanine west', x: -10, y: 4.6, z: 0 },
@@ -81,7 +82,7 @@ export const vault = {
     b.crate(-6.5, 0, -6.5, 1.5, 1.2, 1.5, { tex: 'metalPanel' });
     b.crate(6.5, 0, 6.5, 1.5, 1.2, 1.5, { tex: 'metalPanel' });
 
-    b.light(0, UP - 1.4, 0, { intensity: 46, distance: 28, color: 0xffeccd, castShadow: true });
+    b.light(0, UP - 1.4, 0, { intensity: 30, distance: 26, color: 0xffeccd, castShadow: true });
     b.light(-9.5, MZ + 2.6, -9.5, { intensity: 14, distance: 14, color: 0x8fd0ff });
     b.light(9.5, MZ + 2.6, 9.5, { intensity: 14, distance: 14, color: 0x8fd0ff });
     b.light(-9.5, 3.6, 9.5, { intensity: 12, distance: 13, color: 0xffd9a0 });
@@ -113,7 +114,7 @@ export const vault = {
     b.wallZ(4, A, R0, 0, H, T, W);
     spurCeil(-4, A, 4, R0);
     for (const [lx, lz] of [[-14, 0], [14, 0], [0, -14], [0, 14]]) {
-      b.light(lx, H - 0.9, lz, { intensity: 12, distance: 12, color: 0xffe3bc });
+      b.light(lx, H - 0.9, lz, { intensity: 8, distance: 11, color: 0xffe3bc });
     }
 
     /* ================================================ RING CORRIDOR ======== */
@@ -154,7 +155,7 @@ export const vault = {
       [-18.5, 14], [-18.5, -14], [18.5, 14], [18.5, -14],
       [14, 18.5], [-14, 18.5], [14, -18.5], [-14, -18.5],
       [-18.5, 0], [18.5, 0], [0, 18.5], [0, -18.5],
-    ]) b.light(lx, H - 0.9, lz, { intensity: 10, distance: 12, color: 0xffe3bc });
+    ]) b.light(lx, H - 0.9, lz, { intensity: 7, distance: 11, color: 0xffe3bc });
     b.strip(-R1 + 1, H - 0.5, -R0 - 0.25, R1 - 1, H - 0.35, -R0 - 0.05, 0x4fd8ff, 1.6);
     b.strip(-R1 + 1, H - 0.5, R0 + 0.05, R1 - 1, H - 0.35, R0 + 0.25, 0x4fd8ff, 1.6);
 

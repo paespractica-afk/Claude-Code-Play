@@ -22,11 +22,12 @@ export const foundry = {
   env: {
     turbidity: 8, rayleigh: 2.6, mieCoefficient: 0.008, mieDirectionalG: 0.85,
     elevation: 15, azimuth: 205,
-    sunColor: 0xffd6a0, sunIntensity: 3.0,
-    hemiSky: 0x93b3e0, hemiGround: 0x2a231c, hemiIntensity: 0.6,
+    sunColor: 0xffd6a0, sunIntensity: 2.4,
+    hemiSky: 0x8ea9cc, hemiGround: 0x2a231c, hemiIntensity: 0.30,
     fogColor: 0xa9b7c9, fogDensity: 0.0075,
-    exposure: 1.0, envIntensity: 0.9,
-    grade: { contrast: 1.06, saturation: 1.0, vignette: 0.44 },
+    exposure: 1.0, envIntensity: 2.2,
+    probe: { top: 0x8fa4be, horizon: 0x7b756c, bottom: 0x342d26, boost: 1.0 },
+    grade: { contrast: 1.10, saturation: 1.08, vignette: 0.46 },
   },
   probes: [
     { name: 'mid catwalk', x: -10.2, y: 4.6, z: 0 },
@@ -142,9 +143,9 @@ export const foundry = {
     b.box(12.45, 4.6, -7.2, 12.6, 5.65, 3.0, railM);
     b.box(9.0, 4.6, -7.2, 12.6, 5.65, -7.05, railM);
     b.box(9.0, 4.6, -7.2, 9.15, 5.65, 0.4, railM);
-    b.light(0, 9.5, 0, { intensity: 42, distance: 38, color: 0xfff0d0, castShadow: true });
-    b.light(-10.5, 7, -5, { intensity: 14, distance: 18, color: 0x8fd0ff });
-    b.light(10.5, 7, -5, { intensity: 14, distance: 18, color: 0x8fd0ff });
+    b.light(0, 9.5, 0, { intensity: 34, distance: 34, color: 0xffeeda, castShadow: true });
+    b.light(-10.5, 7, -5, { intensity: 11, distance: 16, color: 0xb2d4ee });
+    b.light(10.5, 7, -5, { intensity: 11, distance: 16, color: 0xb2d4ee });
     b.ceiling(-13, -8, 13, 8, 11, 0.6, W);
     b.sign(0, 4.2, -8.4, 0, 'MID', 0x63ffc8);
 

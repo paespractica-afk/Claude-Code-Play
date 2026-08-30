@@ -174,9 +174,10 @@ export class Agent {
     this._delta = { x: 0, y: 0, z: 0 };
     this._muzzle = new THREE.Vector3();
     this._desiredMove = new THREE.Vector3();
+    this._enemyList = [];
   }
 
-  get blackboard() { return this.game.blackboards[this.team]; }
+  get blackboard() { return this.game.blackboardFor(this.team); }
 
   /* ------------------------------------------------------------ lifecycle -- */
 
@@ -1084,7 +1085,7 @@ export class Agent {
     this.forward.set(-Math.sin(this.aimYaw), 0, -Math.cos(this.aimYaw)).normalize();
 
     // ---- perception ----
-    this.perception.update(dt, this.game.enemiesOf(this.team), this.world, time, this._senseConfig());
+    this.perception.update(dt, this.game.enemiesOf(this.team, this, this._enemyList), this.world, time, this._senseConfig());
 
     // Publish everything we can see.
     for (const [id, v] of this.perception.visible) {

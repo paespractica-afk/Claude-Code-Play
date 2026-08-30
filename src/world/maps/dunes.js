@@ -11,11 +11,12 @@ export const dunes = {
   env: {
     turbidity: 4.5, rayleigh: 1.4, mieCoefficient: 0.004, mieDirectionalG: 0.8,
     elevation: 46, azimuth: 120,
-    sunColor: 0xfff4dc, sunIntensity: 3.6,
-    hemiSky: 0xbcd6ff, hemiGround: 0x8a6a42, hemiIntensity: 0.85,
+    sunColor: 0xfff0d2, sunIntensity: 3.1,
+    hemiSky: 0xa8c4ea, hemiGround: 0x7a5c38, hemiIntensity: 0.45,
     fogColor: 0xdcc9a4, fogDensity: 0.0042,
-    exposure: 0.92, envIntensity: 1.15,
-    grade: { contrast: 1.02, saturation: 1.04, vignette: 0.36 },
+    exposure: 0.95, envIntensity: 1.7,
+    probe: { top: 0xa9c4e6, horizon: 0xcdb68e, bottom: 0x745c40, boost: 1.15 },
+    grade: { contrast: 1.06, saturation: 1.06, vignette: 0.38 },
   },
   probes: [
     { name: 'HQ roof', x: 0, y: 5.0, z: 0 },

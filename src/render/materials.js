@@ -8,17 +8,17 @@ import * as THREE from 'three';
 
 /** World units covered by one texture tile, per surface family. */
 export const TEX_SCALE = {
-  concrete: 3.2,
-  concreteFloor: 4.0,
-  metalPanel: 2.4,
-  paintedMetal: 2.6,
+  concrete: 4.4,
+  concreteFloor: 5.0,
+  metalPanel: 3.0,
+  paintedMetal: 3.2,
   tile: 3.0,
-  wood: 2.4,
+  wood: 2.8,
   sand: 6.0,
-  brick: 3.0,
-  grate: 1.6,
+  brick: 3.6,
+  grate: 2.6,
   hazard: 2.0,
-  marble: 4.0,
+  marble: 5.5,
 };
 
 export class MaterialLibrary {
@@ -45,13 +45,13 @@ export class MaterialLibrary {
       color: new THREE.Color(opts.color ?? 0xffffff),
       normalScale: new THREE.Vector2(opts.normalScale ?? 1, opts.normalScale ?? 1),
       envMapIntensity: opts.envIntensity ?? 1.0,
+      envMapIntensity: opts.envIntensity ?? 1.0,
       dithering: true,
     });
     if (opts.emissive) {
       mat.emissive = new THREE.Color(opts.emissive);
       mat.emissiveIntensity = opts.emissiveIntensity ?? 1;
     }
-    if (this.envMap) mat.envMap = this.envMap;
     this.cache.set(key, mat);
     return mat;
   }
@@ -89,20 +89,16 @@ export class MaterialLibrary {
       dithering: true,
     });
     if (emissive) { mat.emissive = new THREE.Color(emissive); mat.emissiveIntensity = emissiveIntensity; }
-    if (this.envMap) mat.envMap = this.envMap;
     this.cache.set(key, mat);
     return mat;
   }
 
-  setEnvMap(env) {
-    this.envMap = env;
-    for (const m of this.cache.values()) {
-      if (m.isMeshStandardMaterial && m.emissiveIntensity !== undefined && m.color) {
-        m.envMap = env;
-        m.needsUpdate = true;
-      }
-    }
-  }
+  /**
+   * Materials deliberately do NOT carry their own `envMap`: leaving it unset
+   * lets `scene.environment` supply it, which is the only path that respects
+   * `scene.environmentIntensity` and therefore each map's ambient level.
+   */
+  setEnvMap(env) { this.envMap = env; }
 
   dispose() {
     for (const m of this.cache.values()) m.dispose();

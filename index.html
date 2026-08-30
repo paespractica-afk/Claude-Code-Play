@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>BLACKSITE — Tactical Engagement Simulator</title>
+<meta name="description" content="A browser first-person shooter with five modes, three maps and squad-coordinated AI.">
+<link rel="stylesheet" href="styles/game.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0d12'/><circle cx='16' cy='16' r='9' fill='none' stroke='%234ff2c8' stroke-width='2'/><rect x='15' y='2' width='2' height='7' fill='%234ff2c8'/><rect x='15' y='23' width='2' height='7' fill='%234ff2c8'/><rect x='2' y='15' width='7' height='2' fill='%234ff2c8'/><rect x='23' y='15' width='7' height='2' fill='%234ff2c8'/></svg>">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/"
+  }
+}
+</script>
+</head>
+<body>
+  <canvas id="viewport"></canvas>
+  <div id="ui"></div>
+  <noscript><div class="fatal"><div class="fatal-panel"><h1>JAVASCRIPT REQUIRED</h1><p>This game runs entirely in your browser and needs JavaScript enabled.</p></div></div></noscript>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

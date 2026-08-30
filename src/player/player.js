@@ -101,7 +101,7 @@ export class Player {
     this.landDip = new Spring(90, 13, 0);
     this.lean = new Spring(110, 17, 0);
     this.fovSpring = new Spring(90, 16, 1);
-    this.viewModel = new ViewModel(game.render.viewScene, game.effects);
+    this.viewModel = new ViewModel(game.render.viewRig, game.effects);
 
     // Footsteps
     this.stepDistance = 0;

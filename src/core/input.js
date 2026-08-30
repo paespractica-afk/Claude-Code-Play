@@ -99,9 +99,23 @@ export class Input {
 
   requestLock() {
     if (this.locked) return;
-    const p = this.dom.requestPointerLock?.({ unadjustedMovement: true });
-    // unadjustedMovement is unsupported on some platforms; fall back quietly.
-    if (p && typeof p.catch === 'function') p.catch(() => { try { this.dom.requestPointerLock(); } catch { /* ignore */ } });
+    // Pointer lock rejects outright without a user gesture, and the raw-input
+    // option is unsupported on some platforms. Neither is an error worth
+    // surfacing, so every path here is swallowed.
+    const attempt = (opts) => {
+      try {
+        const p = opts ? this.dom.requestPointerLock(opts) : this.dom.requestPointerLock();
+        if (p && typeof p.catch === 'function') return p;
+      } catch { /* older API throws synchronously */ }
+      return null;
+    };
+    const first = attempt({ unadjustedMovement: true });
+    if (first) {
+      first.catch(() => {
+        const second = attempt(null);
+        if (second) second.catch(() => { /* no gesture yet; the next click retries */ });
+      });
+    }
   }
 
   exitLock() { if (this.locked) document.exitPointerLock?.(); }

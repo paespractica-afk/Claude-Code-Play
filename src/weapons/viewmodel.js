@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { Spring, Spring3, clamp, clamp01, lerp, damp, ease, rand, TAU } from '../core/math.js';
 import { buildWeaponModel, disposeWeaponModel } from './model.js';
+import { mergeRigid } from '../render/rig.js';
 
 /** Smooth 0->1 window; `a` and `b` are the phase boundaries within a clip. */
 const win = (t, a, b) => clamp01((t - a) / (b - a || 1));
@@ -30,8 +31,9 @@ export const VMState = {
 };
 
 export class ViewModel {
-  constructor(viewScene, effects) {
-    this.scene = viewScene;
+  /** @param {THREE.Object3D} viewRig a node parented to the view camera */
+  constructor(viewRig, effects) {
+    this.scene = viewRig;
     this.effects = effects;
 
     this.root = new THREE.Group();     // whole rig, receives sway/bob/recoil
@@ -86,17 +88,32 @@ export class ViewModel {
     }
     this.def = def;
     this.model = buildWeaponModel(def);
+    // Collapse the gun into four meshes: the animated magazine, bolt and
+    // trigger, plus everything static. Thirty-plus draw calls become four.
+    const animated = new Set();
+    for (const key of ['magazine', 'bolt', 'trigger']) {
+      const part = this.model.parts[key];
+      if (part && part !== this.model.root) { mergeRigid(part); animated.add(part); }
+    }
+    mergeRigid(this.model.root, animated);
+    // Real-scale guns fill half the screen; shooters draw them smaller and
+    // closer so the sights still line up but the view stays readable.
+    this.model.root.scale.setScalar(0.80);
     this.anim.add(this.model.root);
 
     // Hip pose scales a little with weapon weight so heavy guns sit lower.
     const w = def.weight ?? 1;
-    this.hipPos.set(0.125 + w * 0.012, -0.10 - w * 0.028, -0.24 - w * 0.03);
-    this.hipRot.set(0.02, -0.055, 0.028);
+    // Far enough forward that the stock is not magnified into the corner, and
+    // yawed so the barrel angles toward the crosshair rather than pointing
+    // end-on at the camera.
+    this.hipPos.set(0.140 + w * 0.008, -0.052 - w * 0.012, -0.38 - w * 0.022);
+    this.hipRot.set(0.028, 0.145, 0.052);
 
     // ADS: put the weapon's aim point on the camera axis.
+    const S = 0.80;
     const ap = this.model.parts.aimPoint.position;
-    const dist = def.scoped ? -0.16 : -0.24;
-    this.adsPos.set(-ap.x, -ap.y, dist - ap.z);
+    const dist = def.scoped ? -0.16 : -0.235;
+    this.adsPos.set(-ap.x * S, -ap.y * S, dist - ap.z * S);
     this.adsRot.set(0, 0, 0);
 
     // Reset every spring so a weapon swap can't inherit the last gun's motion.

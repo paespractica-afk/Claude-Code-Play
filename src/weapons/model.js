@@ -89,22 +89,22 @@ function optic(mBody, dotColor, z, y, size = 1) {
   const g = new THREE.Group();
   const bodyM = mBody;
   g.add(box(0.03 * size, 0.008 * size, 0.055 * size, bodyM, 0, y, z));
-  g.add(box(0.026 * size, 0.03 * size, 0.006 * size, bodyM, 0, y + 0.018 * size, z - 0.024 * size));
-  g.add(box(0.026 * size, 0.03 * size, 0.006 * size, bodyM, 0, y + 0.018 * size, z + 0.024 * size));
-  g.add(box(0.006 * size, 0.03 * size, 0.05 * size, bodyM, -0.013 * size, y + 0.018 * size, z));
-  g.add(box(0.006 * size, 0.03 * size, 0.05 * size, bodyM, 0.013 * size, y + 0.018 * size, z));
-  g.add(box(0.026 * size, 0.006 * size, 0.05 * size, bodyM, 0, y + 0.032 * size, z));
+  g.add(box(0.026 * size, 0.03 * size, 0.004 * size, bodyM, 0, y + 0.018 * size, z - 0.025 * size));
+  g.add(box(0.026 * size, 0.03 * size, 0.004 * size, bodyM, 0, y + 0.018 * size, z + 0.025 * size));
+  g.add(box(0.0035 * size, 0.03 * size, 0.05 * size, bodyM, -0.0135 * size, y + 0.018 * size, z));
+  g.add(box(0.0035 * size, 0.03 * size, 0.05 * size, bodyM, 0.0135 * size, y + 0.018 * size, z));
+  g.add(box(0.026 * size, 0.004 * size, 0.05 * size, bodyM, 0, y + 0.033 * size, z));
   // Lens.
   const lens = new THREE.Mesh(
-    new THREE.CircleGeometry(0.011 * size, 20),
-    mat(0x0a1a24, 0.1, 0.2, { transparent: true, opacity: 0.55, emissive: 0x0a2230, emissiveIntensity: 0.6 }),
+    new THREE.CircleGeometry(0.0128 * size, 22),
+    mat(0x0a1a24, 0.1, 0.20, { transparent: true, opacity: 0.55, emissive: 0x0a2230, emissiveIntensity: 0.6 }),
   );
   lens.position.set(0, y + 0.017 * size, z + 0.026 * size);
   g.add(lens);
   // Reticle dot — never tone-mapped away, so it stays visible in bright scenes.
   const dot = new THREE.Mesh(
     new THREE.CircleGeometry(0.0016 * size, 12),
-    mat(0x000000, 1, 0, { emissive: dotColor, emissiveIntensity: 14 }),
+    mat(0x000000, 1, 0.00, { emissive: dotColor, emissiveIntensity: 14 }),
   );
   dot.position.set(0, y + 0.017 * size, z + 0.0275 * size);
   g.add(dot);
@@ -137,10 +137,10 @@ function scope(mBody, mGlass, z, y) {
 function buildRifle(def, compact = false) {
   const root = new THREE.Group();
   const mBody = mat(def.color, 0.55, 0.35);
-  const mMetal = mat(0x1c1f22, 0.34, 0.95);
-  const mDark = mat(0x141618, 0.72, 0.25);
+  const mMetal = mat(0x525860, 0.34, 0.35);
+  const mDark = mat(0x3b4047, 0.66, 0.30);
   const mAccent = mat(def.accent, 0.4, 0.7, { emissive: def.accent, emissiveIntensity: 0.12 });
-  const mPoly = mat(0x1a1c1f, 0.82, 0.05);
+  const mPoly = mat(0x454b53, 0.74, 0.05);
 
   const L = compact ? 0.86 : 1.0;
 
@@ -226,10 +226,10 @@ function buildRifle(def, compact = false) {
 function buildSMG(def) {
   const root = new THREE.Group();
   const mBody = mat(def.color, 0.6, 0.3);
-  const mMetal = mat(0x1b1e21, 0.32, 0.95);
-  const mDark = mat(0x131517, 0.75, 0.2);
+  const mMetal = mat(0x51575f, 0.32, 0.35);
+  const mDark = mat(0x393e45, 0.70, 0.25);
   const mAccent = mat(def.accent, 0.4, 0.6, { emissive: def.accent, emissiveIntensity: 0.15 });
-  const mPoly = mat(0x191b1e, 0.85, 0.05);
+  const mPoly = mat(0x373c43, 0.8, 0.05);
 
   const receiver = new THREE.Group();
   receiver.add(box(0.04, 0.052, 0.24, mBody, 0, 0.02, -0.04));
@@ -278,9 +278,9 @@ function buildSMG(def) {
 
 function buildShotgun(def) {
   const root = new THREE.Group();
-  const mWood = mat(0x4a3220, 0.68, 0.05);
-  const mMetal = mat(0x22262a, 0.3, 0.95);
-  const mDark = mat(0x141618, 0.75, 0.2);
+  const mWood = mat(0x7d5936, 0.62, 0.05);
+  const mMetal = mat(0x454c54, 0.3, 0.35);
+  const mDark = mat(0x3b4047, 0.70, 0.25);
   const mAccent = mat(def.accent, 0.45, 0.5);
 
   const receiver = new THREE.Group();
@@ -328,10 +328,10 @@ function buildShotgun(def) {
 function buildSniper(def) {
   const root = new THREE.Group();
   const mBody = mat(def.color, 0.62, 0.25);
-  const mMetal = mat(0x1a1d20, 0.28, 0.96);
-  const mDark = mat(0x121416, 0.78, 0.2);
-  const mPoly = mat(0x20241d, 0.8, 0.06);
-  const mGlass = mat(0x0d1a22, 0.05, 0.3, { transparent: true, opacity: 0.6, emissive: 0x123040, emissiveIntensity: 0.8 });
+  const mMetal = mat(0x535961, 0.28, 0.35);
+  const mDark = mat(0x383d43, 0.72, 0.25);
+  const mPoly = mat(0x4b503d, 0.74, 0.06);
+  const mGlass = mat(0x0d1a22, 0.05, 0.30, { transparent: true, opacity: 0.6, emissive: 0x123040, emissiveIntensity: 0.8 });
 
   const receiver = new THREE.Group();
   receiver.add(box(0.044, 0.056, 0.30, mBody, 0, 0.02, -0.04));
@@ -391,9 +391,9 @@ function buildSniper(def) {
 function buildLMG(def) {
   const r = buildRifle(def, false);
   const { root, parts } = r;
-  const mDark = mat(0x141618, 0.75, 0.2);
-  const mMetal = mat(0x1c1f22, 0.32, 0.95);
-  const mPoly = mat(0x191b1e, 0.85, 0.05);
+  const mDark = mat(0x3b4047, 0.70, 0.25);
+  const mMetal = mat(0x1c1f22, 0.32, 0.35);
+  const mPoly = mat(0x373c43, 0.8, 0.05);
 
   // Swap the box magazine for a drum.
   parts.magazine.clear();
@@ -419,8 +419,8 @@ function buildPistol(def) {
   const root = new THREE.Group();
   const mBody = mat(def.color, 0.6, 0.35);
   const mMetal = mat(def.accent, 0.3, 0.92);
-  const mDark = mat(0x131517, 0.78, 0.2);
-  const mPoly = mat(0x1a1c1f, 0.86, 0.04);
+  const mDark = mat(0x2c3036, 0.74, 0.25);
+  const mPoly = mat(0x3a3f46, 0.8, 0.04);
 
   const frame = new THREE.Group();
   frame.add(box(0.03, 0.03, 0.15, mPoly, 0, 0.0, -0.03));
@@ -466,8 +466,8 @@ function buildPistol(def) {
 function buildKnife(def) {
   const root = new THREE.Group();
   const mBlade = mat(def.accent, 0.18, 0.98);
-  const mGrip = mat(0x1a1c1f, 0.9, 0.05);
-  const mDark = mat(0x121416, 0.7, 0.4);
+  const mGrip = mat(0x464c54, 0.80, 0.05);
+  const mDark = mat(0x383d43, 0.66, 0.35);
 
   // Tapered blade built from a lathe-free custom shape.
   const shape = new THREE.Shape();

@@ -10,6 +10,10 @@ sees with its squad, and takes angles instead of running at you in a line.
 python3 -m http.server 8931      # then open http://localhost:8931
 ```
 
+It has to be served rather than opened from disk — browsers refuse to load
+JavaScript modules over `file://`. Any static server works, and the page says so
+if you try anyway.
+
 Requires a browser with WebGL 2 (any current Chrome, Edge, Firefox or Safari).
 
 ---

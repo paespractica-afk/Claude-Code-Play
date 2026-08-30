@@ -21,6 +21,21 @@
   <canvas id="viewport"></canvas>
   <div id="ui"></div>
   <noscript><div class="fatal"><div class="fatal-panel"><h1>JAVASCRIPT REQUIRED</h1><p>This game runs entirely in your browser and needs JavaScript enabled.</p></div></div></noscript>
+
+  <!-- Opened straight off disk, the browser blocks ES modules, so say why. -->
+  <script>
+    if (location.protocol === 'file:') {
+      document.body.insertAdjacentHTML('beforeend', `
+        <div class="fatal"><div class="fatal-panel">
+          <h1>NEEDS A LOCAL SERVER</h1>
+          <p>Browsers refuse to load JavaScript modules from <code>file://</code>, so opening this
+             page directly from disk cannot work. Serve the folder instead — any static server does:</p>
+          <pre>python3 -m http.server 8931
+# or:  npx serve .</pre>
+          <p>Then open <strong>http://localhost:8931</strong>.</p>
+        </div></div>`);
+    }
+  </script>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

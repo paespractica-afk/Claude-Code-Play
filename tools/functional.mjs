@@ -298,6 +298,88 @@ await run('AI: bots never leave the navigable world', () => {
   return { pass: worst < 4, detail: `furthest bot from the nav graph: ${worst.toFixed(2)}m` };
 });
 
+/* --------------------------------------------------------- robustness --- */
+
+await run('rapid match restarts leave no leaked state', async () => {
+  const g = window.__game;
+  const modes = ['deathmatch', 'gungame', 'detonate', 'firefight', 'domination'];
+  const maps = ['foundry', 'vault', 'dunes'];
+  for (let i = 0; i < 6; i++) {
+    await g.startMatch({
+      mode: modes[i % modes.length], map: maps[i % maps.length],
+      difficulty: 'regular', botCount: 6, loadout: ['kestrel', 'sidewinder', 'knife'],
+    });
+    g.input.onLockChange = null; g.menu.hide(); g.paused = false;
+    for (let t = 0; t < 1.5; t += 1 / 120) g.fixedUpdate(1 / 120);
+    g.quitToMenu();
+  }
+  await g.startMatch({ mode: 'deathmatch', map: 'foundry', difficulty: 'regular', botCount: 6, loadout: ['kestrel', 'sidewinder', 'knife'] });
+  g.input.onLockChange = null; g.menu.hide(); g.paused = false;
+  const bots = g.agents.filter((a) => !a.isPlayer).length;
+  const dupes = g.damageables.length !== new Set(g.damageables).size;
+  // Bots from earlier matches must not still be in the scene.
+  let orphans = 0;
+  g.render.scene.traverse((o) => { if (o.isSkinnedMesh) orphans++; });
+  return {
+    pass: bots === 6 && !dupes && orphans <= 7,
+    detail: `${bots} bots, ${orphans} character meshes in scene, duplicates: ${dupes}`,
+  };
+});
+
+await run('resizing mid-match does not break rendering', () => {
+  const g = window.__game;
+  for (const [w, h] of [[640, 360], [1600, 900], [900, 900], [320, 240]]) {
+    g.canvas.style.width = `${w}px`;
+    g.canvas.style.height = `${h}px`;
+    Object.defineProperty(g.canvas, 'clientWidth', { value: w, configurable: true });
+    Object.defineProperty(g.canvas, 'clientHeight', { value: h, configurable: true });
+    g.render.resize(true);
+    g.hud.resize();
+    g.frame(1 / 60);
+  }
+  return { pass: g.render.post.width > 0 && g.render.post.height > 0, detail: `post buffer ${g.render.post.width}x${g.render.post.height}` };
+});
+
+await run('changing quality mid-match rebuilds cleanly', () => {
+  const g = window.__game;
+  for (const q of ['low', 'ultra', 'medium', 'high']) {
+    g.settings.quality = q;
+    g.applySettings();
+    for (let t = 0; t < 0.3; t += 1 / 120) g.fixedUpdate(1 / 120);
+    g.frame(1 / 60);
+  }
+  return { pass: true, detail: 'low, ultra, medium, high all applied' };
+});
+
+await run('pausing and resuming repeatedly is safe', () => {
+  const g = window.__game;
+  for (let i = 0; i < 8; i++) {
+    g.pause();
+    g.frame(1 / 60);
+    g.resume();
+    g.menu.hide();
+    g.paused = false;
+    for (let t = 0; t < 0.2; t += 1 / 120) g.fixedUpdate(1 / 120);
+  }
+  return { pass: g.running && !g.paused, detail: 'eight pause/resume cycles' };
+});
+
+await run('a long match stays stable and bounded', () => {
+  const g = window.__game;
+  const before = {
+    timers: g.timers.length,
+    grenades: g.grenades.length,
+    decals: g.effects.decals.used,
+  };
+  for (let t = 0; t < 60; t += 1 / 120) g.fixedUpdate(1 / 120);
+  const alive = g.damageables.filter((e) => e.alive).length;
+  const finite = g.damageables.every((e) => Number.isFinite(e.pos.x) && Number.isFinite(e.pos.y) && Number.isFinite(e.pos.z));
+  return {
+    pass: finite && g.timers.length < 400 && g.grenades.length < 40 && alive > 0,
+    detail: `after 60s: ${g.timers.length} timers, ${g.grenades.length} grenades, ${g.effects.decals.used} decals, ${alive} alive`,
+  };
+});
+
 await run('performance: a full simulated second costs well under a second', () => {
   const g = window.__game;
   const t0 = performance.now();

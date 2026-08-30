@@ -28,6 +28,7 @@ export const foundry = {
     exposure: 1.0, envIntensity: 2.2,
     probe: { top: 0x8fa4be, horizon: 0x7b756c, bottom: 0x342d26, boost: 1.0 },
     grade: { contrast: 1.10, saturation: 1.08, vignette: 0.46 },
+    atmosphere: { dust: 850, dustColor: 0xcfc4ae, dustOpacity: 0.30, shaft: 0.075, dustHeight: 10 },
   },
   probes: [
     { name: 'mid catwalk', x: -10.2, y: 4.6, z: 0 },

@@ -23,6 +23,7 @@ export const vault = {
     probe: { top: 0x46586f, horizon: 0x4b453d, bottom: 0x1c1917, boost: 0.95 },
     showSky: false, backgroundColor: 0x05070b,
     grade: { contrast: 1.14, saturation: 1.0, vignette: 0.55 },
+    atmosphere: { dust: 900, dustColor: 0xbfc6d2, dustOpacity: 0.34, shaft: 0.085, dustRange: 20, dustHeight: 10 },
   },
   probes: [
     { name: 'mezzanine west', x: -10, y: 4.6, z: 0 },

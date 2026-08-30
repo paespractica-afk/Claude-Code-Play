@@ -13,6 +13,7 @@ import { RenderContext } from './render/scene.js';
 import { TextureLibrary } from './render/textures.js';
 import { MaterialLibrary, buildBrushGeometry } from './render/materials.js';
 import { EffectsManager } from './render/effects.js';
+import { Atmosphere } from './render/atmosphere.js';
 import { Player } from './player/player.js';
 import { Agent, DIFFICULTY } from './ai/agent.js';
 import { Blackboard } from './ai/blackboard.js';
@@ -135,6 +136,7 @@ export class Game {
     this.menu.setLoading(0.8, 'COMPILING SHADERS');
     await new Promise((r) => setTimeout(r, 30));
     this.effects = new EffectsManager(this.render.scene, this.render.viewScene, this.collision, this.render.quality);
+    this.atmosphere = new Atmosphere(this.render.scene);
     this.menu.setLoading(1, 'READY');
     await new Promise((r) => setTimeout(r, 200));
     // Load a map so the menu has a live world orbiting behind it.
@@ -167,6 +169,7 @@ export class Game {
     for (const l of this.dynamicLights) this.render.scene.remove(l);
     this.dynamicLights.length = 0;
     this.effects?.clear();
+    this.atmosphere?.clear();
 
     const b = new MapBuilder();
     def.build(b);
@@ -190,6 +193,32 @@ export class Game {
     this.render.applyEnvironment(def.env);
     this.materials.setEnvMap(this.render.scene.environment);
     this._placeLights(b);
+
+    // Atmosphere: dust in the air, and a soft shaft under each real light.
+    const atmo = def.env.atmosphere || {};
+    if (this.atmosphere && this.render.quality.particles > 0.3) {
+      this.atmosphere.buildDust(Math.round((atmo.dust ?? 700) * this.render.quality.particles), {
+        color: atmo.dustColor ?? 0xd8ccb4,
+        opacity: atmo.dustOpacity ?? 0.28,
+        range: atmo.dustRange ?? 22,
+        height: atmo.dustHeight ?? 9,
+      });
+      for (const L of this.dynamicLights) {
+        // Only fixtures with real reach earn a shaft, and only if there is
+        // floor beneath them to catch it.
+        if (L.distance < 12) continue;
+        const drop = this.collision.raycast(L.position.x, L.position.y, L.position.z, 0, -1, 0, L.distance, 'solid');
+        if (!drop) continue;
+        const len = Math.min(L.position.y - drop.point.y, L.distance * 0.8);
+        if (len < 2) continue;
+        this.atmosphere.addShaft(L.position.x, L.position.y, L.position.z, {
+          radius: Math.min(2.6, 0.55 + len * 0.24),
+          length: len,
+          color: L.color.getHex(),
+          intensity: (atmo.shaft ?? 0.09) * clamp01(L.intensity / 250),
+        });
+      }
+    }
 
     // Navigation.
     this.nav = new NavGrid(this.collision, { cell: 1.2, bounds: def.bounds }).build();
@@ -822,6 +851,7 @@ export class Game {
     audio.updateListener(p.eyePos, fwd, { x: 0, y: 1, z: 0 });
 
     this.effects.update(dt);
+    this.atmosphere.update(dt, p.eyePos, this.time);
 
     if (this.spikeMarker) {
       const blink = 0.5 + 0.5 * Math.sin(this.time * 8);

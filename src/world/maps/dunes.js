@@ -17,6 +17,7 @@ export const dunes = {
     exposure: 0.95, envIntensity: 1.7,
     probe: { top: 0xa9c4e6, horizon: 0xcdb68e, bottom: 0x745c40, boost: 1.15 },
     grade: { contrast: 1.06, saturation: 1.06, vignette: 0.38 },
+    atmosphere: { dust: 700, dustColor: 0xe3d0aa, dustOpacity: 0.22, shaft: 0.04, dustRange: 26, dustHeight: 12 },
   },
   probes: [
     { name: 'HQ roof', x: 0, y: 5.0, z: 0 },

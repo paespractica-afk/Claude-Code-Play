@@ -278,7 +278,7 @@ const RECIPES = {
     const fine = (fbm(u * 56, v * 14, 3, 56, row) - 0.5) * 0.035;
     const tone = 0.34 + (hash2(row, 0, 5) - 0.5) * 0.04 + rings * 0.04 + fine;
     return {
-      r: tone * 1.24, g: tone * 1.0, b: tone * 0.78,
+      r: tone * 1.14, g: tone * 1.0, b: tone * 0.84,
       h: gap ? 0.2 : 0.55 + rings * 0.18 + fine * 3,
       rough: 0.60 + rings * 0.14,
       ao: gap ? 0.45 : 0.95 + rings * 0.05,

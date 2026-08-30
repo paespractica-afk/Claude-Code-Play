@@ -386,7 +386,7 @@ export class PostPipeline {
       ssao: true,
       fxaa: true,
       bloomStrength: 0.42,
-      bloomThreshold: 1.35,
+      bloomThreshold: 1.6,
       bloomKnee: 0.55,
       bloomRadius: 1.0,
       aoStrength: 0.85,

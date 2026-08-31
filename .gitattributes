@@ -1,0 +1,5 @@
+# Normalise text files, but keep Windows script files CRLF: a .bat with bare LF
+# endings misbehaves on some Windows configurations.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
